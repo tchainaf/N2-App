@@ -47,7 +47,7 @@
     </STYLE>
     <SCRIPT>
         function loadImage() {
-            url = 'https://api.nasa.gov/planetary/apod?api_key=S0tbFn2saMno68cAnaypgEq9M4z4GzeX5lK4JWAu';
+            url = 'http://api.open-notify.org/iss-pass.json?lat=45.0&lon=-122.3&n=10';
             console.log(url);
             var xhr = new XMLHttpRequest();
 
@@ -69,23 +69,11 @@
         }
         
         function successo (result) {
-            if("copyright" in result) {
-                $("#copyright").text("Image Credits: " + result.copyright);
-            }
-            else {
-                $("#copyright").text("Image Credits: " + "Public Domain");
-            }
-            
-            if(result.media_type == "video") {
-                $("#apod_img_id").css("display", "none"); 
-                $("#apod_vid_id").attr("src", result.url);
-            }
-            else {
-                $("#apod_vid_id").css("display", "none"); 
-                $("#apod_img_id").attr("src", result.url);
-            } 
-            $("#apod_explaination").text(result.explanation);
-            $("#apod_title").text(result.title);
+            result.response.forEach(item => {
+                var date = new Date(item['risetime']*1000),
+                    timeZone = date.toTimeString().substring(17);
+                $('#list').append('<li>' + date.toLocaleString() + timeZone + '</li>');
+            });
         }
     </SCRIPT>
 </HEAD>
@@ -113,12 +101,8 @@
         <h1><span class="badge badge-success">Projeto do aluno!!</span></h1>
         <p><a href="https://github.com/public-apis/public-apis" target="_apis">Lista de APIs públicas</a></p>
 
-        <img id="apod_img_id" width="250px"/>  
-        <iframe id="apod_vid_id" type="text/html" width="640" height="385" frameborder="0"></iframe>
-        <p id="copyright"></p>
-        
-        <h3 id="apod_title"></h3>
-        <p id="apod_explaination"></p>
+        <h4>Próximas passagens da ISS</h4>
+        <ul id="list" width="250px"></ul>  
         <br/>
         <br/>
     </main>
