@@ -1,63 +1,73 @@
+<!--Thainá França - RA: 082160022-->
+
 <!DOCTYPE HTML>
 <HTML>
 
 <HEAD>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <!-- A biblioteca bundle já contem os arquivos JS do Bootstrap, Popper, e jQuery.
-    <script src="js/bootstrap.bundle.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>-->
     <title>FTT EC LP2 N1!!</title>
-  
+
     <LINK REL="stylesheet" HREF="css/bootstrap.css" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
+        integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+        crossorigin=""></script>
+
     <STYLE>
         .center-txt {
             text-align: center;
             color: black;
             width: 90px;
             padding: 4px;
-            margin:0;
-            border:0;
+            margin: 0;
+            border: 0;
         }
         .button-selected {
             background-color: #343a40;
             color: white;
             border-radius: 15px;
-        }       
+        }
         .width-button-bar {
             text-align: center;
             padding-top: 5px;
             padding-bottom: 5px;
             margin-right: 0;
             margin-left: 0;
-            
         }
         .bottom-button-bar {
-            margin:0;
-            padding:0;
-            border:0;
+            margin: 0;
+            padding: 0;
+            border: 0;
             width: 100%;
         }
         .icon-font {
-            font-size: 40px;   
+            font-size: 40px;
         }
         main {
             padding-top: 56px;
             padding-bottom: 50px;
         }
+        #map {
+            height: 400px;
+        }
     </STYLE>
     <SCRIPT>
-        function loadImage() {
-            url = 'http://api.open-notify.org/iss-pass.json?lat=45.0&lon=-122.3&n=10';
+        var selectedCoord = [];
+        function issNow() {
+            url = 'http://api.open-notify.org/iss-now.json';
             console.log(url);
             var xhr = new XMLHttpRequest();
 
-            xhr.onload = function() {
+            xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     console.log('success!', JSON.parse(xhr.responseText));
-                    var dados = JSON.parse(xhr.responseText);
-                    successo(dados);
-                } else {                    
-                    let error_message= "Ops! Erro!!!<br>" + xhr.statusText;
+                    var coordenadas = JSON.parse(xhr.responseText);
+                    mapear(coordenadas);
+                } else {
+                    let error_message = "Ops! Erro!!!<br>" + xhr.statusText;
                     console.log(error_message);
                     document.getElementById("aluno").innerHTML = error_message;
                 }
@@ -67,21 +77,90 @@
             xhr.open('GET', url);
             xhr.send();
         }
-        
-        function successo (result) {
+
+        function mapear(result) {
+            var coord = [result.iss_position["latitude"], result.iss_position["longitude"]];
+
+            //Inicialização do mapa
+            var container = L.DomUtil.get('map');
+            if (container != null) { container._leaflet_id = null; }
+            var map = L.map('map').setView(coord, 2);
+
+            //Estilo do mapa
+            L.tileLayer('https://tile.thunderforest.com/neighbourhood/{z}/{x}/{y}.png?apikey=e4fb05028c3c4411aa553c96f5f6168c', { maxZoom: 18 }).addTo(map);
+
+            //Marcador de localização
+            var myIcon = L.icon({
+                iconUrl: 'img/iss.png',
+                iconSize: [90, 36]
+            });
+            L.marker(coord, { icon: myIcon }).addTo(map);
+
+            //Marcador de ponto pesquisado
+            var selCoordMarker;
+            if (selectedCoord.length > 0) {
+                selCoordMarker = L.marker(selectedCoord);
+                selCoordMarker.addTo(map);
+            }
+
+            //Evento de click no mapa
+            map.on('click', function (e) {
+                document.getElementById("auxMsg").innerHTML = "Carregando...";
+                searchData(e);
+
+                //Posiciona o marcador no ponto clicado
+                if(map.hasLayer(selCoordMarker)) { map.removeLayer(selCoordMarker); }
+                selCoordMarker = L.marker(e.latlng);
+                selCoordMarker.addTo(map);
+            });
+
+            setTimeout(issNow, 10000);
+        }
+
+        function searchData(info) {
+            url = 'http://api.open-notify.org/iss-pass.json?lat=' + info.latlng.lat + '&lon=' + info.latlng.lng + '&n=10';
+            console.log(url);
+            var xhr = new XMLHttpRequest();
+
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    console.log('success!', JSON.parse(xhr.responseText));
+                    var dados = JSON.parse(xhr.responseText);
+                    listar(dados);
+                } else {
+                    let error_message = "Erro ao obter os dados. Tente novamente!<br>" + xhr.statusText;
+                    console.log(error_message);
+                    document.getElementById("auxMsg").innerHTML = error_message;
+                }
+            };
+
+            xhr.abort();
+            xhr.open('GET', url);
+            xhr.send();
+        }
+
+        function listar(result) {
+            //Armazena as coordenadas do ponto pesquisado
+            selectedCoord = [result.request.latitude, result.request.longitude];
+
+            document.getElementById('listTitle').removeAttribute('hidden');
+            document.getElementById('auxMsg').innerHTML = '<i style="font-size:small">Horário de Brasília</i>';
+
+            //Preenche lista com horário das passagens
+            document.getElementById('list').innerHTML = "";
             result.response.forEach(item => {
-                var date = new Date(item['risetime']*1000),
-                    timeZone = date.toTimeString().substring(17);
-                $('#list').append('<li>' + date.toLocaleString() + timeZone + '</li>');
+                var date = new Date(item['risetime'] * 1000);
+                $('#list').append('<li>' + date.toLocaleString() + '</li>');
             });
         }
     </SCRIPT>
 </HEAD>
 
-<BODY onload="loadImage();" lang="pt-br">
+<BODY onload="issNow();" lang="pt-br">
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo03" aria-controls="navbarTogglerDemo03" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo03"
+            aria-controls="navbarTogglerDemo03" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
@@ -98,31 +177,46 @@
 
     <main class="container" id="aluno">
         <hr>
-        <h1><span class="badge badge-success">Projeto do aluno!!</span></h1>
-        <p><a href="https://github.com/public-apis/public-apis" target="_apis">Lista de APIs públicas</a></p>
+        <h1>Localização da Estação Espacial Internacional</h1>
+        <div class="row">
+            <div id="map" class="col-sm-8"></div>
 
-        <h4>Próximas passagens da ISS</h4>
-        <ul id="list" width="250px"></ul>  
-        <br/>
-        <br/>
+            <div class="col-sm-4">
+                <h5 id="listTitle" hidden>Próximas passagens no ponto</h5>
+                <ul id="list"></ul>
+                <p id="auxMsg"></p>
+                <i id="clickMsg" style="font-size:small">*Clique em um ponto do mapa para visualizar as próximas
+                    passagens da Estação Espacial Internacional no local</i>
+            </div>
+        </div>
     </main>
 
     <nav class="navbar fixed-bottom navbar-light bg-light width-button-bar">
         <div class="row w-100 bottom-button-bar">
-            <div class="col-sm center-txt"><b onclick='window.location="tab01news.html"'>News<br><span class="icon-font">&#x1f4f0;</span></b>
+            <div class="col-sm center-txt"><b onclick='window.location="tab01news.html"'>News<br><span
+                        class="icon-font">&#x1f4f0;</span></b>
             </div>
-            <div class="col-sm center-txt"><b onclick='window.location="tab02map.html"'>Map<br><span class="icon-font">&#x1f4cc;</span></b>
+            <div class="col-sm center-txt"><b onclick='window.location="tab02map.html"'>Map<br><span
+                        class="icon-font">&#x1f4cc;</span></b>
             </div>
-            <div class="col-sm center-txt"><b onclick='window.location="tab03todo.html"'>Todo<br><span class="icon-font">&#x1F4DD;</span></b>
+            <div class="col-sm center-txt"><b onclick='window.location="tab03todo.html"'>Todo<br><span
+                        class="icon-font">&#x1F4DD;</span></b>
             </div>
-            <div class="col-sm center-txt button-selected"><b onclick='window.location="tab04project.html"'>???<br><span class="icon-font">&#x1F981;</span></b>
+            <div class="col-sm center-txt button-selected"><b onclick='window.location="tab04project.html"'>ISS<br><span
+                        class="icon-font">&#x1F981;</span></b>
             </div>
         </div>
     </nav>
 </BODY>
 <!-- carga de scripts do Bootstrap, JQuery, Popper -->
-<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"
+    integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh"
+    crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"
+    integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ"
+    crossorigin="anonymous"></script>
 
 </HTML>
