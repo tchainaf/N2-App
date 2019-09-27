@@ -118,7 +118,7 @@
         }
 
         function searchData(info) {
-            url = 'http://api.open-notify.org/iss-pass.json?lat=' + info.latlng.lat + '&lon=' + info.latlng.lng + '&n=10';
+            url = 'https://cors-anywhere.herokuapp.com/http://api.open-notify.org/iss-pass.json?lat=' + info.latlng.lat + '&lon=' + info.latlng.lng + '&n=10';
             console.log(url);
             var xhr = new XMLHttpRequest();
 
