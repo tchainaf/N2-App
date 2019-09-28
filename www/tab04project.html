@@ -67,13 +67,12 @@
                     var coordenadas = JSON.parse(xhr.responseText);
                     mapear(coordenadas);
                 } else {
-                    let error_message = "Ops! Erro!!!<br>" + xhr.statusText;
+                    let error_message = "Erro ao obter o mapa. Recarregue a página!";
                     console.log(error_message);
                     document.getElementById("aluno").innerHTML = error_message;
                 }
             };
 
-            xhr.abort();
             xhr.open('GET', url);
             xhr.send();
         }
@@ -128,13 +127,13 @@
                     var dados = JSON.parse(xhr.responseText);
                     listar(dados);
                 } else {
-                    let error_message = "Erro ao obter os dados. Tente novamente!<br>" + xhr.statusText;
+                    let error_message = "Erro ao obter os dados. Tente outro ponto!<br>";
                     console.log(error_message);
+                    document.getElementById('list').innerHTML = "";
                     document.getElementById("auxMsg").innerHTML = error_message;
                 }
             };
 
-            xhr.abort();
             xhr.open('GET', url);
             xhr.send();
         }
